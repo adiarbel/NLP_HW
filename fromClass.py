@@ -11,13 +11,14 @@ class feature_statistics_class():
         # ---Add more count dictionaries here---
 
     def get_word_tag_pair_count(self, file_path):
+        """
             Extract out of text all word/tag pairs
             :param file_path: full path of the file to read
                 return all word/tag pairs with index of appearance
         """
         with open(file_path) as f:
             for line in f:
-                splited_words = split(line, (' ', '\n'))
+                splited_words = re.split(' |\n ',line)
                 del splited_words[-1]
                 for word_idx in range(len(splited_words)):
                     cur_word, cur_tag = split(splited_words[word_idx], '_')
