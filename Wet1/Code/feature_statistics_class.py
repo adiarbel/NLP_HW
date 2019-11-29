@@ -52,20 +52,20 @@ class feature_statistics_class():
                     cur_word_len = len(cur_word)
                     pre_suf_slice_size = min(cur_word_len, 4)
                     if pre_suf_flag:
-                        cur_part = cur_word[-pre_suf_slice_size:-1]
+                        cur_part = cur_word[-pre_suf_slice_size:]
                     else:
-                        cur_part = cur_word[0:pre_suf_slice_size-1]
-                    for i in reversed(range(cur_word_len-1)):
+                        cur_part = cur_word[:pre_suf_slice_size]
+                    for i in reversed(range(1,pre_suf_slice_size+1)):
                         if pre_suf_flag:
-                            if (cur_part[-i:-1], cur_tag) not in self.words_suffix_tags_count_dict:
-                                self.words_suffix_tags_count_dict[(cur_part[-i-1:-1], cur_tag)] = 1
+                            if (cur_part[-i:], cur_tag) not in self.words_suffix_tags_count_dict:
+                                self.words_suffix_tags_count_dict[(cur_part[-i:], cur_tag)] = 1
                             else:
-                                self.words_suffix_tags_count_dict[(cur_part[-i-1:-1], cur_tag)] += 1
+                                self.words_suffix_tags_count_dict[(cur_part[-i:], cur_tag)] += 1
                         else:
-                            if (cur_part[0:i-1], cur_tag) not in self.words_prefix_tags_count_dict:
-                                self.words_prefix_tags_count_dict[(cur_part[0:i], cur_tag)] = 1
+                            if (cur_part[:i], cur_tag) not in self.words_prefix_tags_count_dict:
+                                self.words_prefix_tags_count_dict[(cur_part[:i], cur_tag)] = 1
                             else:
-                                self.words_prefix_tags_count_dict[(cur_part[0:i], cur_tag)] += 1
+                                self.words_prefix_tags_count_dict[(cur_part[:i], cur_tag)] += 1
 
     def get_trigram_tags_count(self, file_path):
         """
