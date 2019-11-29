@@ -16,6 +16,8 @@ class feature_statistics_class():
         self.bigram_tags_count_dict = OrderedDict()
         self.unigram_tags_count_dict = OrderedDict()
 
+        self.capitalized_tags_count_dict = OrderedDict()
+
     def get_word_tag_pair_count(self, file_path):
         """
             Extract out of text all word/tag pairs
@@ -70,15 +72,15 @@ class feature_statistics_class():
     def get_trigram_tags_count(self, file_path):
         """
             Extract out of text all trigram counts
-            We padded with one '*' at the beginning and end of sentence
-            This is because the information captured by "* * tag" is also captured by the bigram
+            We padded with two '*' at the beginning and end of sentence
             :param file_path: full path of the file to read
                 return all trigram counts with index of appearance
         """
         with open(file_path) as f:
             for line in f:
                 splited_words = re.split(' |\n ',line)
-                splited_words[-1] = "*_*"  # add '*' at the end
+                del splited_words[-1]
+                splited_words.insert(0, "*_*")  # add '*' at the beginning
                 splited_words.insert(0, "*_*")  # add '*' at the beginning
                 for word_idx in range(len(splited_words)-2):
                     _, prev_prev_tag = splited_words[word_idx].split('_')
@@ -101,7 +103,7 @@ class feature_statistics_class():
         with open(file_path) as f:
             for line in f:
                 splited_words = re.split(' |\n ',line)
-                splited_words[-1] = "*_*"  # add '*' at the end
+                del splited_words[-1]
                 splited_words.insert(0, "*_*")  # add '*' at the beginning
                 for word_idx in range(len(splited_words) - 1):
                     _, prev_tag = splited_words[word_idx].split('_')
@@ -128,3 +130,31 @@ class feature_statistics_class():
                         self.unigram_tags_count_dict[curr_key] = 1
                     else:
                         self.unigram_tags_count_dict[curr_key] += 1
+
+    def get_capitalized_tags_count(self, file_path):
+        """
+            Extract out of text all the counts for capitalized tags
+            :param file_path: full path of the file to read
+                return all capitalized tags counts with index of appearance
+        """
+        with open(file_path) as f:
+            for line in f:
+                splited_words = re.split(' |\n ', line)
+                for word_idx in range(len(splited_words)):
+                    cur_word, cur_tag = splited_words[word_idx].split('_')
+                    if 'A' <= cur_word[0] <= 'Z':
+                        curr_key = cur_tag
+                        if curr_key not in self.capitalized_tags_count_dict:
+                            self.capitalized_tags_count_dict[curr_key] = 1
+                        else:
+                            self.capitalized_tags_count_dict[curr_key] += 1
+
+    def get_all_counts(self, file_path):
+        self.get_word_tag_pair_count(file_path)
+        self.get_pre_suf_tag_pair_count(file_path, True)
+        self.get_pre_suf_tag_pair_count(file_path, False)
+        self.get_capitalized_tags_count(file_path)
+        self.get_trigram_tags_count(file_path)
+        self.get_trigram_tags_count(file_path)
+        self.get_bigram_tags_count(file_path)
+        self.get_unigram_tags_count(file_path)

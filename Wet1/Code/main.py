@@ -1,20 +1,32 @@
 import numpy as np
 import scipy
 from feature_statistics_class import feature_statistics_class
+from feature2id_class import feature2id_class
+import train_helper
 import operator
+import pickle
 
-path = r"..\Data\train1.wtag"
-a = feature_statistics_class()
-a.get_word_tag_pair_count(path)
-a.get_pre_suf_tag_pair_count(path,True)
-print(a.words_suffix_tags_count_dict.keys())
-maximum  = max(a.words_suffix_tags_count_dict, key=a.words_suffix_tags_count_dict.get)
-print(maximum, a.words_suffix_tags_count_dict[maximum])
-sorted_d = sorted(a.words_suffix_tags_count_dict.items(), key=operator.itemgetter(1), reverse=True)
-print(sorted_d)
+path = r"..\Data\train2.wtag"
+threshold = 30
+
+'''
+find_all_features = True
+if find_all_features:
+    sum_of_reals, all_features = train_helper.get_all_features(path, statistics.unigram_tags_count_dict.keys(), ids)
+    features_path = './all_features.pkl'
+    sum_of_reals_path = './sum_of_reals.pkl'
+    with open(features_path, 'wb') as f:
+        pickle.dump(all_features, f)
+    with open(sum_of_reals_path, 'wb') as f:
+        pickle.dump(sum_of_reals, f)
+else:
+    with open('./all_features.pkl', 'rb') as f:
+        all_features = pickle.load(f)
+    with open('./sum_of_reals.pkl', 'rb') as f:
+        sum_of_reals = pickle.load(f)
+'''
+
+train_helper.train(path, threshold)
 #
-# a = feature_statistics_class()
-# a.get_trigram_tags_count(path)
-# a.get_bigram_tags_count(path)
-# a.get_unigram_tags_count(path)
-# print(a.bigram_tags_count_dict[('DT','VBG')])
+# print(train_helper.represent_input_with_features(("dog", "NN", "DT", "NN", "The", "eats"), ids))
+
