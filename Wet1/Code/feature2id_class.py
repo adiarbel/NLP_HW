@@ -10,21 +10,34 @@ class feature2id_class():
         self.n_total_features = 0  # Total number of features accumulated
 
         self.n_tag_pairs = 0
+        self.n_tag_pairs_p = 0
+        self.n_tag_pairs_n = 0
         self.n_suffix_tags = 0
         self.n_prefix_tags = 0
         self.n_trigram_tags = 0
         self.n_bigram_tags = 0
         self.n_unigram_tags = 0
         self.n_capitalized_tags = 0
+        self.n_Allcapitalized_tags = 0
+        self.n_hyphen_tags = 0
+        self.n_contains_number_tags = 0
 
         # Init all features dictionaries
         self.words_tags_dict = OrderedDict()
+        self.pwords_tags_dict = OrderedDict()
+        self.nwords_tags_dict = OrderedDict()
         self.words_suffix_tags_dict = OrderedDict()
         self.words_prefix_tags_dict = OrderedDict()
         self.trigram_tags_dict = OrderedDict()
         self.bigram_tags_dict = OrderedDict()
         self.unigram_tags_dict = OrderedDict()
         self.capitalized_tags_dict = OrderedDict()
+
+        self.Allcapitalized_tags_dict = OrderedDict()
+
+        self.hyphen_tags_dict = OrderedDict()
+
+        self.contain_number_tags_dict = OrderedDict()
 
     def get_word_tag_pairs(self, file_path):
         """
@@ -34,14 +47,32 @@ class feature2id_class():
         """
         with open(file_path) as f:
             for line in f:
-                splited_words = re.split(' |\n ', line)
+                splited_words = re.split(' |\n', line)
                 del splited_words[-1]
+                splited_words.insert(0, "*_*")
+                splited_words.append("*_*")
 
-                for word_idx in range(len(splited_words)):
+                for word_idx in range(1, len(splited_words)-1):
+
+                    pword, _ = splited_words[word_idx - 1].split('_')
                     cur_word, cur_tag = splited_words[word_idx].split('_')
+                    nword, _ = splited_words[word_idx + 1].split('_')
+
                     if ((cur_word, cur_tag) not in self.words_tags_dict) \
                             and (self.statistics.words_tags_count_dict[(cur_word, cur_tag)] >= self.threshold):
                         self.words_tags_dict[(cur_word, cur_tag)] = self.n_total_features
+                        self.n_total_features += 1
+                        self.n_tag_pairs += 1
+
+                    if ((pword, cur_tag) not in self.pwords_tags_dict) \
+                            and (self.statistics.pwords_tags_count_dict[(pword, cur_tag)] >= self.threshold):
+                        self.pwords_tags_dict[(pword, cur_tag)] = self.n_total_features
+                        self.n_total_features += 1
+                        self.n_tag_pairs += 1
+
+                    if ((nword, cur_tag) not in self.nwords_tags_dict) \
+                            and (self.statistics.nwords_tags_count_dict[(nword, cur_tag)] >= self.threshold):
+                        self.nwords_tags_dict[(nword, cur_tag)] = self.n_total_features
                         self.n_total_features += 1
                         self.n_tag_pairs += 1
 
@@ -54,7 +85,7 @@ class feature2id_class():
         """
         with open(file_path) as f:
             for line in f:
-                split_words = re.split(' | \n ', line)
+                split_words = re.split(' | \n', line)
                 del split_words[-1]
                 for word_idx in range(len(split_words)):
                     cur_word, cur_tag = split_words[word_idx].split('_')
@@ -90,7 +121,7 @@ class feature2id_class():
         """
         with open(file_path) as f:
             for line in f:
-                splited_words = re.split(' |\n ', line)
+                splited_words = re.split(' |\n', line)
                 del splited_words[-1]
                 splited_words.insert(0, "*_*")  # add '*' at the beginning
                 splited_words.insert(0, "*_*")  # add '*' at the beginning
@@ -114,7 +145,7 @@ class feature2id_class():
         """
         with open(file_path) as f:
             for line in f:
-                splited_words = re.split(' |\n ', line)
+                splited_words = re.split(' |\n', line)
                 del splited_words[-1]
                 splited_words.insert(0, "*_*")  # add '*' at the beginning
                 for word_idx in range(len(splited_words) - 1):
@@ -135,7 +166,8 @@ class feature2id_class():
         """
         with open(file_path) as f:
             for line in f:
-                splited_words = re.split(' |\n ', line)
+                splited_words = re.split(' |\n', line)
+                del splited_words[-1]
                 for word_idx in range(len(splited_words)):
                     _, cur_tag = splited_words[word_idx].split('_')
                     curr_key = cur_tag
@@ -153,14 +185,87 @@ class feature2id_class():
         """
         with open(file_path) as f:
             for line in f:
-                splited_words = re.split(' |\n ', line)
+                splited_words = re.split(' |\n', line)
+                del splited_words[-1]
                 for word_idx in range(len(splited_words)):
                     cur_word, cur_tag = splited_words[word_idx].split('_')
-                    if 'A' <= cur_word[0] <= 'Z':
+                    flag = True
+                    for ch in cur_word:
+                        if 'A' > ch or 'Z' < ch:
+                            flag = False
+                    if 'A' <= cur_word[0] <= 'Z' and not flag:
                         curr_key = cur_tag
                         if curr_key not in self.capitalized_tags_dict \
                                 and (self.statistics.capitalized_tags_count_dict[curr_key] >= self.threshold):
                             self.capitalized_tags_dict[curr_key] = self.n_total_features
+                            self.n_total_features += 1
+                            self.n_capitalized_tags += 1
+
+    def get_Allcapitalized_tags(self, file_path):
+        """
+            Extract out of text all the counts for capitalized tags
+            :param file_path: full path of the file to read
+                return all capitalized tags counts with index of appearance
+        """
+        with open(file_path) as f:
+            for line in f:
+                splited_words = re.split(' |\n', line)
+                del splited_words[-1]
+                for word_idx in range(len(splited_words)):
+                    cur_word, cur_tag = splited_words[word_idx].split('_')
+                    flag = True
+                    for ch in cur_word:
+                        if 'A' > ch or 'Z' < ch:
+                            flag = False
+                    if flag:
+                        curr_key = cur_tag
+                        if curr_key not in self.Allcapitalized_tags_dict \
+                                and (self.statistics.Allcapitalized_tags_count_dict[curr_key] >= self.threshold):
+                            self.Allcapitalized_tags_dict[curr_key] = self.n_total_features
+                            self.n_total_features += 1
+                            self.n_capitalized_tags += 1
+
+    def get_hyphen_tags(self, file_path):
+        """
+            Extract out of text all the counts for capitalized tags
+            :param file_path: full path of the file to read
+                return all capitalized tags counts with index of appearance
+        """
+        with open(file_path) as f:
+            for line in f:
+                splited_words = re.split(' |\n', line)
+                del splited_words[-1]
+                for word_idx in range(len(splited_words)):
+                    cur_word, cur_tag = splited_words[word_idx].split('_')
+                    if '-' in cur_word:
+                        curr_key = cur_tag
+                        if curr_key not in self.hyphen_tags_dict \
+                                and (self.statistics.hyphen_tags_count_dict[curr_key] >= self.threshold):
+                            self.hyphen_tags_dict[curr_key] = self.n_total_features
+                            self.n_total_features += 1
+                            self.n_capitalized_tags += 1
+
+    def get_contains_number_tags(self, file_path):
+        """
+            Extract out of text all the counts for capitalized tags
+            :param file_path: full path of the file to read
+                return all capitalized tags counts with index of appearance
+        """
+        with open(file_path) as f:
+            for line in f:
+                splited_words = re.split(' |\n', line)
+                del splited_words[-1]
+                for word_idx in range(len(splited_words)):
+                    cur_word, cur_tag = splited_words[word_idx].split('_')
+                    flag = False
+                    for ch in cur_word:
+                        if '0' <= ch <= '9':
+                            flag = True
+                    if flag:
+                        curr_key = cur_tag
+                        if curr_key not in self.contain_number_tags_dict \
+                                and (self.statistics.contain_number_tags_count_dict[curr_key] >= self.threshold):
+                            self.contain_number_tags_dict[curr_key] = self.n_total_features
                             self.n_total_features += 1
                             self.n_capitalized_tags += 1
 
@@ -173,3 +278,6 @@ class feature2id_class():
         self.get_trigram_tags(file_path)
         self.get_bigram_tags(file_path)
         self.get_unigram_tags(file_path)
+        self.get_Allcapitalized_tags(file_path)
+        self.get_hyphen_tags(file_path)
+        self.get_contains_number_tags(file_path)
