@@ -20,10 +20,18 @@ class feature_statistics_class():
 
         self.capitalized_tags_count_dict = OrderedDict()
         self.Allcapitalized_tags_count_dict = OrderedDict()
+        self.contain_capital_tags_count_dict = OrderedDict()
 
         self.hyphen_tags_count_dict = OrderedDict()
+        self.dot_tags_count_dict = OrderedDict()
+        self.apos_tags_count_dict = OrderedDict()
 
         self.contain_number_tags_count_dict = OrderedDict()
+
+        self.nnwords_tags_count_dict = OrderedDict()
+        self.ppwords_tags_count_dict = OrderedDict()
+
+
 
     def get_word_tag_pair_count(self, file_path):
         """
@@ -179,6 +187,37 @@ class feature_statistics_class():
                         else:
                             self.capitalized_tags_count_dict[curr_key] += 1
 
+    def get_contain_capital_tags_count(self, file_path):
+        """
+            Extract out of text all the counts for capitalized tags
+            :param file_path: full path of the file to read
+                return all capitalized tags counts with index of appearance
+        """
+        with open(file_path) as f:
+            for line in f:
+                splited_words = re.split(' |\n', line)
+                del splited_words[-1]
+                for word_idx in range(len(splited_words)):
+                    cur_word, cur_tag = splited_words[word_idx].split('_')
+                    flag_all = True
+                    for ch in cur_word:
+                        if 'A' > ch or 'Z' < ch:
+                            flag_all = False
+
+                    flag_first = 'A' <= cur_word[0] <= 'Z'
+
+                    flag_contain = False
+                    for ch in cur_word:
+                        if 'A' <= ch <= 'Z':
+                            flag_contain = True
+
+                    if not flag_first and not flag_all and flag_contain:
+                        curr_key = cur_tag
+                        if curr_key not in self.contain_capital_tags_count_dict:
+                            self.contain_capital_tags_count_dict[curr_key] = 1
+                        else:
+                            self.contain_capital_tags_count_dict[curr_key] += 1
+
     def get_Allcapitalized_tags_count(self, file_path):
         """
             Extract out of text all the counts for capitalized tags
@@ -221,6 +260,44 @@ class feature_statistics_class():
                         else:
                             self.hyphen_tags_count_dict[curr_key] += 1
 
+    def get_dot_tags_count(self, file_path):
+        """
+            Extract out of text all the counts for capitalized tags
+            :param file_path: full path of the file to read
+                return all capitalized tags counts with index of appearance
+        """
+        with open(file_path) as f:
+            for line in f:
+                splited_words = re.split(' |\n', line)
+                del splited_words[-1]
+                for word_idx in range(len(splited_words)):
+                    cur_word, cur_tag = splited_words[word_idx].split('_')
+                    if '.' in cur_word:
+                        curr_key = cur_tag
+                        if curr_key not in self.dot_tags_count_dict:
+                            self.dot_tags_count_dict[curr_key] = 1
+                        else:
+                            self.dot_tags_count_dict[curr_key] += 1
+
+    def get_apos_tags_count(self, file_path):
+        """
+            Extract out of text all the counts for capitalized tags
+            :param file_path: full path of the file to read
+                return all capitalized tags counts with index of appearance
+        """
+        with open(file_path) as f:
+            for line in f:
+                splited_words = re.split(' |\n', line)
+                del splited_words[-1]
+                for word_idx in range(len(splited_words)):
+                    cur_word, cur_tag = splited_words[word_idx].split('_')
+                    if '\'' in cur_word:
+                        curr_key = cur_tag
+                        if curr_key not in self.apos_tags_count_dict:
+                            self.apos_tags_count_dict[curr_key] = 1
+                        else:
+                            self.apos_tags_count_dict[curr_key] += 1
+
     def get_contains_number_tags_count(self, file_path):
         """
             Extract out of text all the counts for capitalized tags
@@ -244,6 +321,36 @@ class feature_statistics_class():
                         else:
                             self.contain_number_tags_count_dict[curr_key] += 1
 
+    def get_nnwords_tags_count(self, file_path):
+        with open(file_path) as f:
+            for line in f:
+                splited_words = re.split(' |\n',line)
+                del splited_words[-1]
+                splited_words.append("*_*")  # add '*' at the beginning
+                splited_words.append("*_*")  # add '*' at the beginning
+                for word_idx in range(len(splited_words) - 2):
+                    _, cur_tag = splited_words[word_idx].split('_')
+                    nnword, _ = splited_words[word_idx + 2].split('_')
+                    if (nnword, cur_tag) not in self.nnwords_tags_count_dict:
+                        self.nnwords_tags_count_dict[(nnword, cur_tag)] = 1
+                    else:
+                        self.nnwords_tags_count_dict[(nnword, cur_tag)] += 1
+
+    def get_ppwords_tags_count(self, file_path):
+        with open(file_path) as f:
+            for line in f:
+                splited_words = re.split(' |\n',line)
+                del splited_words[-1]
+                splited_words.insert(0,"*_*")  # add '*' at the beginning
+                splited_words.insert(0,"*_*")  # add '*' at the beginning
+                for word_idx in range(2,len(splited_words)):
+                    _, cur_tag = splited_words[word_idx].split('_')
+                    ppword, _ = splited_words[word_idx - 2].split('_')
+                    if (ppword, cur_tag) not in self.ppwords_tags_count_dict:
+                        self.ppwords_tags_count_dict[(ppword, cur_tag)] = 1
+                    else:
+                        self.ppwords_tags_count_dict[(ppword, cur_tag)] += 1
+
     def get_all_counts(self, file_path):
         self.get_word_tag_pair_count(file_path)
         self.get_pre_suf_tag_pair_count(file_path, True)
@@ -256,3 +363,8 @@ class feature_statistics_class():
         self.get_Allcapitalized_tags_count(file_path)
         self.get_hyphen_tags_count(file_path)
         self.get_contains_number_tags_count(file_path)
+        self.get_nnwords_tags_count(file_path)
+        self.get_ppwords_tags_count(file_path)
+        self.get_dot_tags_count(file_path)
+        self.get_apos_tags_count(file_path)
+        self.get_contain_capital_tags_count(file_path)

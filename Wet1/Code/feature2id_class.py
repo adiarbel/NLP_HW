@@ -19,23 +19,30 @@ class feature2id_class():
         self.n_unigram_tags = 0
         self.n_capitalized_tags = 0
         self.n_Allcapitalized_tags = 0
+        self.n_contain_capital_tags = 0
         self.n_hyphen_tags = 0
+        self.n_apos_tags = 0
+        self.n_dot_tags = 0
         self.n_contains_number_tags = 0
 
         # Init all features dictionaries
         self.words_tags_dict = OrderedDict()
         self.pwords_tags_dict = OrderedDict()
         self.nwords_tags_dict = OrderedDict()
+        self.ppwords_tags_dict = OrderedDict()
+        self.nnwords_tags_dict = OrderedDict()
         self.words_suffix_tags_dict = OrderedDict()
         self.words_prefix_tags_dict = OrderedDict()
         self.trigram_tags_dict = OrderedDict()
         self.bigram_tags_dict = OrderedDict()
         self.unigram_tags_dict = OrderedDict()
         self.capitalized_tags_dict = OrderedDict()
-
+        self.contain_capital_tags_dict = OrderedDict()
         self.Allcapitalized_tags_dict = OrderedDict()
 
         self.hyphen_tags_dict = OrderedDict()
+        self.dot_tags_dict = OrderedDict()
+        self.apos_tags_dict = OrderedDict()
 
         self.contain_number_tags_dict = OrderedDict()
 
@@ -85,7 +92,7 @@ class feature2id_class():
         """
         with open(file_path) as f:
             for line in f:
-                split_words = re.split(' | \n', line)
+                split_words = re.split(' |\n', line)
                 del split_words[-1]
                 for word_idx in range(len(split_words)):
                     cur_word, cur_tag = split_words[word_idx].split('_')
@@ -223,7 +230,39 @@ class feature2id_class():
                                 and (self.statistics.Allcapitalized_tags_count_dict[curr_key] >= self.threshold):
                             self.Allcapitalized_tags_dict[curr_key] = self.n_total_features
                             self.n_total_features += 1
-                            self.n_capitalized_tags += 1
+                            self.n_Allcapitalized_tags += 1
+
+    def get_contain_capital_tags(self, file_path):
+        """
+            Extract out of text all the counts for capitalized tags
+            :param file_path: full path of the file to read
+                return all capitalized tags counts with index of appearance
+        """
+        with open(file_path) as f:
+            for line in f:
+                splited_words = re.split(' |\n', line)
+                del splited_words[-1]
+                for word_idx in range(len(splited_words)):
+                    cur_word, cur_tag = splited_words[word_idx].split('_')
+                    flag_all = True
+                    for ch in cur_word:
+                        if 'A' > ch or 'Z' < ch:
+                            flag_all = False
+
+                    flag_first = 'A' <= cur_word[0] <= 'Z'
+
+                    flag_contain = False
+                    for ch in cur_word:
+                        if 'A' <= ch <= 'Z':
+                            flag_contain = True
+
+                    if not flag_first and not flag_all and flag_contain:
+                        curr_key = cur_tag
+                        if curr_key not in self.contain_capital_tags_dict \
+                                and (self.statistics.contain_capital_tags_count_dict[curr_key] >= self.threshold):
+                            self.contain_capital_tags_dict[curr_key] = self.n_total_features
+                            self.n_total_features += 1
+                            self.n_contain_capital_tags += 1
 
     def get_hyphen_tags(self, file_path):
         """
@@ -237,13 +276,27 @@ class feature2id_class():
                 del splited_words[-1]
                 for word_idx in range(len(splited_words)):
                     cur_word, cur_tag = splited_words[word_idx].split('_')
+                    if '.' in cur_word:
+                        curr_key = cur_tag
+                        if curr_key not in self.dot_tags_dict \
+                                and (self.statistics.dot_tags_count_dict[curr_key] >= self.threshold):
+                            self.dot_tags_dict[curr_key] = self.n_total_features
+                            self.n_total_features += 1
+                            self.n_dot_tags += 1
+                    if '\'' in cur_word:
+                        curr_key = cur_tag
+                        if curr_key not in self.apos_tags_dict \
+                                and (self.statistics.apos_tags_count_dict[curr_key] >= self.threshold):
+                            self.apos_tags_dict[curr_key] = self.n_total_features
+                            self.n_total_features += 1
+                            self.n_apos_tags += 1
                     if '-' in cur_word:
                         curr_key = cur_tag
                         if curr_key not in self.hyphen_tags_dict \
                                 and (self.statistics.hyphen_tags_count_dict[curr_key] >= self.threshold):
                             self.hyphen_tags_dict[curr_key] = self.n_total_features
                             self.n_total_features += 1
-                            self.n_capitalized_tags += 1
+                            self.n_hyphen_tags += 1
 
     def get_contains_number_tags(self, file_path):
         """
@@ -267,7 +320,51 @@ class feature2id_class():
                                 and (self.statistics.contain_number_tags_count_dict[curr_key] >= self.threshold):
                             self.contain_number_tags_dict[curr_key] = self.n_total_features
                             self.n_total_features += 1
-                            self.n_capitalized_tags += 1
+                            self.n_contains_number_tags += 1
+
+
+    def get_nnword_tag_pairs(self, file_path):
+        """
+            Extract out of text all word/tag pairs
+            :param file_path: full path of the file to read
+                return all word/tag pairs with index of appearance
+        """
+        with open(file_path) as f:
+            for line in f:
+                splited_words = re.split(' |\n', line)
+                del splited_words[-1]
+                splited_words.append("*_*")
+                splited_words.append("*_*")
+                for word_idx in range(len(splited_words)-2):
+
+                    _, cur_tag = splited_words[word_idx].split('_')
+                    nnword, _ = splited_words[word_idx + 2].split('_')
+                    if ((nnword, cur_tag) not in self.nnwords_tags_dict) \
+                            and (self.statistics.nnwords_tags_count_dict[(nnword, cur_tag)] >= self.threshold):
+                        self.nnwords_tags_dict[(nnword, cur_tag)] = self.n_total_features
+                        self.n_total_features += 1
+                        self.n_tag_pairs += 1
+    def get_ppword_tag_pairs(self, file_path):
+        """
+            Extract out of text all word/tag pairs
+            :param file_path: full path of the file to read
+                return all word/tag pairs with index of appearance
+        """
+        with open(file_path) as f:
+            for line in f:
+                splited_words = re.split(' |\n', line)
+                del splited_words[-1]
+                splited_words.insert(0, "*_*")  # add '*' at the beginning
+                splited_words.insert(0, "*_*")  # add '*' at the beginning
+                for word_idx in range(2,len(splited_words)):
+
+                    _, cur_tag = splited_words[word_idx].split('_')
+                    ppword, _ = splited_words[word_idx - 2].split('_')
+                    if ((ppword, cur_tag) not in self.ppwords_tags_dict) \
+                            and (self.statistics.ppwords_tags_count_dict[(ppword, cur_tag)] >= self.threshold):
+                        self.ppwords_tags_dict[(ppword, cur_tag)] = self.n_total_features
+                        self.n_total_features += 1
+                        self.n_tag_pairs += 1
 
     def get_all_ids(self, file_path):
         self.get_word_tag_pairs(file_path)
@@ -281,3 +378,6 @@ class feature2id_class():
         self.get_Allcapitalized_tags(file_path)
         self.get_hyphen_tags(file_path)
         self.get_contains_number_tags(file_path)
+        self.get_nnword_tag_pairs(file_path)
+        self.get_ppword_tag_pairs(file_path)
+        self.get_contain_capital_tags(file_path)

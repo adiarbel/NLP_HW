@@ -5,6 +5,7 @@ from scipy.optimize import fmin_l_bfgs_b
 from feature_statistics_class import feature_statistics_class
 from feature2id_class import feature2id_class
 import pickle
+import time
 
 def get_suf(word):
     suf_slice_size = min(len(word), 4)
@@ -31,6 +32,8 @@ def represent_input_with_features(history, features_id):
     ctag = history[3]
     nword = history[4]
     pword = history[5]
+    nnword = history[6]
+    ppword = history[7]
     features = []
 
     if (word, ctag) in features_id.words_tags_dict:
@@ -62,17 +65,37 @@ def represent_input_with_features(history, features_id):
     if ctag in features_id.capitalized_tags_dict and 'A' <= word[0] <= 'Z' and not flag_all_caps:
         features.append(features_id.capitalized_tags_dict[ctag])
 
+    flag_contain = False
+    for ch in word:
+        if 'A' <= ch <= 'Z':
+            flag_contain = True
+    if ctag in features_id.contain_capital_tags_dict and not  'A' <= word[0] <= 'Z' and not flag_all_caps and flag_contain:
+        features.append(features_id.contain_capital_tags_dict[ctag])
+
     if (nword, ctag) in features_id.nwords_tags_dict:
         features.append(features_id.nwords_tags_dict[(nword, ctag)])
 
     if (pword, ctag) in features_id.pwords_tags_dict:
         features.append(features_id.pwords_tags_dict[(pword, ctag)])
 
+    if (ppword, ctag) in features_id.ppwords_tags_dict:
+        features.append(features_id.ppwords_tags_dict[(ppword, ctag)])
+
+    if (nnword, ctag) in features_id.nnwords_tags_dict:
+        features.append(features_id.nnwords_tags_dict[(nnword, ctag)])
+
     if ctag in features_id.Allcapitalized_tags_dict and flag_all_caps:
         features.append(features_id.Allcapitalized_tags_dict[ctag])
 
+    if ctag in features_id.dot_tags_dict and '.' in word:
+        features.append(features_id.dot_tags_dict[ctag])
+
+    if ctag in features_id.apos_tags_dict and '\'' in word:
+        features.append(features_id.apos_tags_dict[ctag])
+
     if ctag in features_id.hyphen_tags_dict and '-' in word:
         features.append(features_id.hyphen_tags_dict[ctag])
+
 
     flag_num = False
     for ch in word:
@@ -111,18 +134,20 @@ def get_all_history(file_path,all_tags):
     real_hist = []
     with open(file_path) as f:
         for line in f:
-            splited_words = re.split(' |\n ', line)
+            splited_words = re.split(' |\n', line)
             splited_words[-1] = "*_*"  # add '*' at the end
+            splited_words.append("*_*")  # add '*' at the beginning
             splited_words.insert(0, "*_*")  # add '*' at the beginning
             splited_words.insert(0, "*_*")  # add '*' at the beginning
 
-            for word_idx in range(len(splited_words) - 3):
-                _, pptag = splited_words[word_idx].split('_')
+            for word_idx in range(len(splited_words) - 4):
+                ppword, pptag = splited_words[word_idx].split('_')
                 pword, ptag = splited_words[word_idx + 1].split('_')
                 word, ctag = splited_words[word_idx + 2].split('_')
                 nword, _ = splited_words[word_idx + 3].split('_')
+                nnword, _ = splited_words[word_idx + 4].split('_')
 
-                curr_base_hist = [word, pptag, ptag, ctag, nword, pword]
+                curr_base_hist = [word, pptag, ptag, ctag, nword, pword,nnword,ppword]
                 ctag_idx = 3
                 real_hist.append(tuple(curr_base_hist))
                 curr_opt_hist = []
@@ -133,7 +158,7 @@ def get_all_history(file_path,all_tags):
                 all_hist.append(curr_opt_hist)
     return [all_hist, real_hist]
 
-def calc_objective_per_iter(w_i, lam, all_features, sum_of_real_features, all_tags, ids, iter, weights_path_write):
+def calc_objective_per_iter(w_i, lam, all_features, sum_of_real_features, all_tags, ids, iter, weights_path_write,t0,time_path):
     """
         Calculate max entropy likelihood for an iterative optimization method
         :param w_i: weights vector in iteration i
@@ -146,7 +171,6 @@ def calc_objective_per_iter(w_i, lam, all_features, sum_of_real_features, all_ta
     ## Try implementing it as efficient as possible, as this is repeated for each iteration of optimization.
     exp_terms = []
     linear_term = sum_of_real_features.dot(w_i)
-
     normalization_term = 0
     for curr_opt_features in all_features:
         sum_curr_opt_features = 0
@@ -178,14 +202,19 @@ def calc_objective_per_iter(w_i, lam, all_features, sum_of_real_features, all_ta
     grad = empirical_counts - expected_counts - regularization_grad
     print("###################Finished iter!###################")
     weights_path_write = weights_path_write[:-4]+'_milestone{}.pkl'.format(iter[0])
-    if iter[0] % 10 == 0:
+    if iter[0] % 1 == 0:
         with open(weights_path_write, 'wb') as f:
             pickle.dump(tuple(w_i), f)
     iter[0] += 1
+    t_till_now = time.time() - t0
+    curr_time_path = time_path+'_milestone{}.pkl'.format(iter[0])
+    with open(curr_time_path, 'wb') as f:
+        pickle.dump(t_till_now, f)
+
     return (-1) * likelihood, (-1) * grad
 
 
-def train(path,threshold, num_iterations, weights_path_write,weights_path_pretrain=""):
+def train(path,threshold, num_iterations, weights_path_write, time_path, weights_path_pretrain=""):
     # Statistics
     statistics = feature_statistics_class()
     statistics.get_all_counts(path)
@@ -195,28 +224,26 @@ def train(path,threshold, num_iterations, weights_path_write,weights_path_pretra
     feature2id.get_all_ids(path)
 
     # define 'args', that holds the arguments arg_1, arg_2, ... for 'calc_objective_per_iter'
-    lam = 0.01
+    lam = 0.001
     all_tags = statistics.unigram_tags_count_dict.keys()
     sum_of_real_features, all_features = get_all_features(path, all_tags, feature2id)
-
     iter = [0]
-    args = (lam, all_features, sum_of_real_features, all_tags, feature2id, iter, weights_path_write)
+    t0 = time.time()
+    args = (lam, all_features, sum_of_real_features, all_tags, feature2id, iter, weights_path_write,t0,time_path)
 
     if weights_path_pretrain != "":
         with open(weights_path_pretrain, 'rb') as f:
             optimal_params = pickle.load(f)
-            pre_trained_weights = optimal_params[0]
+            pre_trained_weights = optimal_params
             w_0 = pre_trained_weights
     else:
-        w_0 = np.zeros(feature2id.n_total_features, dtype=np.float32)
+        w_0 = np.random.random(feature2id.n_total_features)
+        #w_0 = np.zeros(feature2id.n_total_features, dtype=np.float32)
 
     optimal_params = fmin_l_bfgs_b(func=calc_objective_per_iter, x0=w_0, args=args, maxiter=num_iterations, iprint=1)
     weights = optimal_params[0]
 
-    # Now you can save weights using pickle.dump() - 'weights_path' specifies where the weight file will be saved.
-    # IMPORTANT - we expect to recieve weights in 'pickle' format, don't use any other format!!
-    with open(weights_path_write, 'wb') as f:
-        pickle.dump(optimal_params, f)
+
 
     #### In order to load pre-trained weights, just use the next code: ####
     #                                                                     #

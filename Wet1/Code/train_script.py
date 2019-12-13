@@ -5,16 +5,28 @@ import test_helper
 import feature_statistics_class
 import feature2id_class
 import time
+import argparse
+
+
+parser = argparse.ArgumentParser()
+
+#-db DATABSE -u USERNAME -p PASSWORD -size 20
+parser.add_argument("-m", "--milestone", help="milestone")
+
+
+args = parser.parse_args()
+milestone = args.milestone
+
 
 path = r"../Data/train1.wtag"
 #test_path = r"../Data/test1.wtag"
-test_path = r"../Data/miniTest.wtag"
+test_path = r"../Data/test1.wtag"
 
 #thresholds = [5, 10, 25, 50, 70, 100, 200]
 #thresholds = [10, 25, 50, 70]
 
-thresholds = [70]
-num_iterations = 100
+thresholds = [1]
+num_iterations = 40
 for threshold in thresholds:
 
     t0_statistics = time.time()
@@ -28,28 +40,34 @@ for threshold in thresholds:
 
     elapsed_statistics = time.time() - t0_statistics
 
-    t0_train = time.time()
-    #weights_path_load = "train1_weights_extra_features/trained_weights_th{}_ep{}.pkl".format(threshold, num_iterations)
-    #weights_path_pretrain = "train1_weights_extra_features/trained_weights_th10_ep12.pkl"
-    weights_path_load = r"C:\Users\user\Technion\Adi Arbel - 097215\Repository\train1_weights_extra_features\trained_weights_th70_ep100_milestone50.pkl"
-    #weights_path_load = r"C:\Users\user\Documents\NLP_HW\Wet1\Code\train1_weights_extra_features\trained_weights_th300_ep1_milestone0.pkl"
+    #t0_train = time.time()
+    #weights_path_load = "train1_weights_extra_features/trained_weights_th{}_ep{}_milestone{}.pkl".format(threshold, num_iterations, milestone)
+    weights_path_load = "train1_weights_extra_features/trained_weights_th{}_ep{}.pkl".format(threshold, num_iterations)
+    #weights_path_pretrain = "train1_weights_extra_features/trained_weights_th1_ep26_milestone14.pkl"
 
-    #train_helper.train(path, threshold, num_iterations, weights_path_load)
+    #weights_path_load = r"C:\Users\user\Documents\NLP_HW\Wet1\Code\train1_weights_extra_features\trained_weights_th3_ep150_milestone30.pkl"
+    #eights_path_load = r"C:\Users\user\Technion\Adi Arbel - 097215\Repository\train1_weights_extra_features\trained_weights_th10_ep22.pkl"
 
-    elapsed_train = time.time() - t0_train
+
+    #weights_path_load = r"C:\Users\user\Documents\NLP_HW\Wet1\Code\train1_weights_extra_features\trained_weights_th3_ep150.pkl"
+
+    train_helper.train(path, threshold, num_iterations, weights_path_load,"times/")
+    '''
+    #elapsed_train = time.time() - t0_train
 
     with open(weights_path_load, 'rb') as f:  #
         optimal_params = pickle.load(f)
         pre_trained_weights = optimal_params
 
-    t0_predict = time.time()
-    final_tags, confusion_matrix = test_helper.memm_viterbi(all_tags, test_path, pre_trained_weights, feature_ids)
-    elapsed_predict = time.time() - t0_predict
+    #t0_predict = time.time()
+    final_tags, confusion_matrix,final_acc = test_helper.memm_viterbi(all_tags, test_path, pre_trained_weights, feature_ids)
+    #elapsed_predict = time.time() - t0_predict
 
-    save_con_path = "confusion_matrix_th{}_ep{}.pkl".format(threshold, num_iterations)
-
-    time_path = "time_th{}_ep{}.pkl".format(threshold, num_iterations)
+    save_con_path = "con_mat_miniTest_th{}_ep{}_mile{}.pkl".format(threshold, num_iterations, milestone)
+    con_mat = (confusion_matrix, final_tags , final_acc)
+    time_path = "time_miniTest_th{}_ep{}_mile{}.pkl".format(threshold, num_iterations, milestone)
     with open(save_con_path, 'wb') as f:
-        pickle.dump((confusion_matrix, final_tags), f)
+        pickle.dump(con_mat, f)
     with open(time_path, 'wb') as f:
         pickle.dump((elapsed_statistics, elapsed_train, elapsed_predict), f)
+    '''
